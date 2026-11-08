@@ -1,0 +1,12 @@
+{
+  "name": "pulsar",
+  "version": "1.0.0",
+  "scripts": {
+    "test:db": "node --test supabase/tests/db.test.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.15",
+    "supabase": "^3.0.0"
+  },
+  "private": true
+}
