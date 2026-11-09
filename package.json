@@ -2,11 +2,46 @@
   "name": "pulsar",
   "version": "1.0.0",
   "scripts": {
-    "test:db": "node --test supabase/tests/db.test.mjs"
+    "start": "expo start",
+    "android": "expo start --android",
+    "lint": "expo lint",
+    "typecheck": "tsc --noEmit",
+    "test:db": "node --test supabase/tests/db.test.mjs",
+    "gen:types": "supabase gen types typescript --remote --schema public > src/types/database.ts"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.15",
-    "supabase": "^3.0.0"
+    "@types/react": "~19.3.0",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~58.0.4",
+    "react-dom": "^19.3.0",
+    "supabase": "^3.0.0",
+    "typescript": "~6.0.3"
   },
-  "private": true
+  "private": true,
+  "main": "expo-router/entry",
+  "dependencies": {
+    "@hookform/resolvers": "^7.0.5",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@supabase/supabase-js": "^2.119.0",
+    "@tanstack/react-query": "^5.107.1",
+    "expo": "~58.0.23",
+    "expo-blur": "~58.0.5",
+    "expo-constants": "~58.0.15",
+    "expo-font": "~58.0.11",
+    "expo-image": "~58.0.18",
+    "expo-image-picker": "~58.0.10",
+    "expo-linear-gradient": "~58.0.3",
+    "expo-linking": "~58.0.16",
+    "expo-router": "~58.0.30",
+    "expo-status-bar": "~58.0.4",
+    "expo-video": "~58.0.13",
+    "react": "19.3.0",
+    "react-hook-form": "^7.91.0",
+    "react-native": "0.88.1",
+    "react-native-safe-area-context": "~5.11.1",
+    "react-native-screens": "~4.30.1",
+    "react-native-svg": "15.16.0",
+    "zod": "^4.6.7"
+  }
 }

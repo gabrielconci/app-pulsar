@@ -5,14 +5,40 @@ Portfólio digital para bailarinos. App em React Native (Expo + TypeScript), bac
 ## Estrutura
 
 ```
+src/
+  app/                   Rotas (Expo Router): cada arquivo é uma tela
+    (auth)/              Login, cadastro, confira seu email
+    (onboarding)/        Criar perfil, interesses
+    (app)/(tabs)/        Home, Descobrir*, Notificações*, Perfil  (*inativas na v1)
+  components/
+    ui/                  Peças básicas: AppText, Button, TextField, Chip, Icon
+    layout/              AppHeader, HeroLayout, BackButton, TabIcon...
+  features/              Lógica por funcionalidade (api, hooks, componentes)
+    auth/  profile/  interests/
+  lib/                   Cliente Supabase, mensagens de erro
+  theme/                 Cores, fontes, espaçamentos (tema claro)
+  types/database.ts      Tipos gerados do banco (npm run gen:types)
+  utils/                 CPF, datas
+assets/
+  fonts/                 Bahnschrift (Light, Regular, SemiBold, Bold)
+  images/                Fotos de fundo das telas de entrada
 supabase/
   config.toml            Configuração do projeto Supabase
   migrations/            Banco de dados (tabelas, regras de acesso, funções)
   functions/             Edge Functions
     login/               Login por usuário, email ou CPF
     delete-account/      Exclusão de conta
+    change-signup-email/ "Usar outro email" antes da confirmação
   tests/                 Testes do banco (rodam sem Docker, via PGlite)
 ```
+
+## Rodar o app
+
+1. `npm install`
+2. Copie `.env.example` para `.env` e preencha com a URL e a anon key do Supabase.
+3. `npm start` e abra no Android com o app **Expo Go** (leia o QR code).
+
+Antes de dar a tarefa por concluída: `npm run typecheck` e `npm run lint`.
 
 ## Backend
 
