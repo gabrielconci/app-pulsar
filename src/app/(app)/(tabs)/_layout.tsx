@@ -1,5 +1,6 @@
 import { Tabs, type BottomTabBarButtonProps } from 'expo-router/js-tabs';
 import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabIcon } from '@/components/layout/TabIcon';
 import { colors, fonts } from '@/theme';
 
@@ -13,6 +14,9 @@ function InactiveTabButton({ style, children }: BottomTabBarButtonProps) {
 }
 
 export default function TabsLayout() {
+  // Space taken by Android's own buttons / gesture bar at the bottom.
+  const insets = useSafeAreaInsets();
+
   return (
     <Tabs
       screenOptions={{
@@ -20,7 +24,13 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.text,
         tabBarInactiveTintColor: colors.text2,
         tabBarLabelStyle: { fontFamily: fonts.regular, fontSize: 12 },
-        tabBarStyle: { backgroundColor: colors.bg, borderTopColor: colors.surface2, height: 72, paddingTop: 6 },
+        tabBarStyle: {
+          backgroundColor: colors.bg,
+          borderTopColor: colors.surface2,
+          height: 72 + insets.bottom,
+          paddingTop: 6,
+          paddingBottom: insets.bottom,
+        },
         sceneStyle: { backgroundColor: colors.bg },
       }}
     >
