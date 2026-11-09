@@ -9,10 +9,13 @@ type Props = Omit<TextInputProps, 'ref'> & {
   error?: string;
   // Helper text under the field (e.g. "Sobre mim" description).
   hint?: string;
+  // Rounded box with an orange border (Figma "Novo projeto" fields) instead
+  // of the underline.
+  boxed?: boolean;
 };
 
 // Label + input with a line underneath, as in the Figma forms.
-export function TextField({ ref, label, error, hint, style, onFocus, onBlur, multiline, ...rest }: Props) {
+export function TextField({ ref, label, error, hint, boxed, style, onFocus, onBlur, multiline, ...rest }: Props) {
   const [focused, setFocused] = useState(false);
   const lineColor = error ? colors.danger : focused ? colors.primary : colors.line;
 
@@ -37,7 +40,9 @@ export function TextField({ ref, label, error, hint, style, onFocus, onBlur, mul
         style={[
           styles.input,
           multiline && styles.multiline,
-          { borderBottomColor: lineColor, borderBottomWidth: focused || error ? 1.5 : 1 },
+          boxed
+            ? [styles.boxed, { borderColor: error ? colors.danger : colors.primary, borderWidth: focused || error ? 1.5 : 1 }]
+            : { borderBottomColor: lineColor, borderBottomWidth: focused || error ? 1.5 : 1 },
           style,
         ]}
         {...rest}
@@ -64,4 +69,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   multiline: { minHeight: 64, textAlignVertical: 'top' },
+  boxed: { borderRadius: 12, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
 });

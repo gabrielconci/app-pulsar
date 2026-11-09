@@ -35,6 +35,78 @@ export type Database = {
         }
         Relationships: []
       }
+      comment_likes: {
+        Row: {
+          comment_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          user_id?: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_likes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comment_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comments: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          post_id: string
+        }
+        Insert: {
+          author_id?: string
+          body: string
+          created_at?: string
+          id?: string
+          post_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       interests: {
         Row: {
           id: number
@@ -53,6 +125,39 @@ export type Database = {
         }
         Relationships: []
       }
+      post_claps: {
+        Row: {
+          created_at: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          post_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_claps_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_claps_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_media: {
         Row: {
           created_at: string
@@ -63,6 +168,7 @@ export type Database = {
           position: number
           post_id: string
           storage_path: string
+          thumbnail_path: string | null
           width: number | null
         }
         Insert: {
@@ -74,6 +180,7 @@ export type Database = {
           position: number
           post_id: string
           storage_path: string
+          thumbnail_path?: string | null
           width?: number | null
         }
         Update: {
@@ -85,6 +192,7 @@ export type Database = {
           position?: number
           post_id?: string
           storage_path?: string
+          thumbnail_path?: string | null
           width?: number | null
         }
         Relationships: [
@@ -93,6 +201,39 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_views: {
+        Row: {
+          first_seen_at: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          first_seen_at?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          first_seen_at?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_views_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_views_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -259,6 +400,48 @@ export type Database = {
         Returns: string
       }
       email_for_identifier: { Args: { p_identifier: string }; Returns: string }
+      get_comments: {
+        Args: { p_post_id: string }
+        Returns: {
+          author_avatar_path: string
+          author_full_name: string
+          author_id: string
+          author_username: string
+          body: string
+          created_at: string
+          id: string
+          liked_by_me: boolean
+          likes_count: number
+          post_id: string
+        }[]
+      }
+      get_posts: {
+        Args: {
+          p_author_id?: string
+          p_before_created_at?: string
+          p_before_id?: string
+          p_limit?: number
+          p_post_id?: string
+        }
+        Returns: {
+          author_avatar_path: string
+          author_full_name: string
+          author_id: string
+          author_username: string
+          body: string
+          caption: string
+          clapped_by_me: boolean
+          claps_count: number
+          comments_count: number
+          created_at: string
+          id: string
+          media: Json
+          subtitle: string
+          title: string
+          type: Database["public"]["Enums"]["post_type"]
+          views_count: number
+        }[]
+      }
       get_profile_stats: {
         Args: { p_profile_id: string }
         Returns: {
@@ -271,6 +454,7 @@ export type Database = {
       }
       is_cpf_available: { Args: { p_cpf: string }; Returns: boolean }
       is_username_available: { Args: { p_username: string }; Returns: boolean }
+      record_post_view: { Args: { p_post_id: string }; Returns: undefined }
       set_my_interests: {
         Args: { p_interest_ids: number[] }
         Returns: undefined

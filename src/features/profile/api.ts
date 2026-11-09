@@ -1,3 +1,4 @@
+import { readLocalFile } from '@/lib/files';
 import { supabase } from '@/lib/supabase';
 import type { Tables } from '@/types/database';
 
@@ -59,7 +60,7 @@ export async function completeOnboarding(userId: string) {
 export async function uploadAvatar(userId: string, uri: string, mimeType = 'image/jpeg'): Promise<string> {
   const ext = mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
   const path = `${userId}/avatar-${Date.now()}.${ext}`;
-  const file = await fetch(uri).then((r) => r.arrayBuffer());
+  const file = await readLocalFile(uri);
 
   const { error } = await supabase.storage.from('avatars').upload(path, file, { contentType: mimeType });
   if (error) throw error;

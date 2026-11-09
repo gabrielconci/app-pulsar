@@ -171,11 +171,11 @@ test('create_post: valid posts of every type', async () => {
       title: 'Minha trajetória',
       subtitle: 'Desde criança',
       body: 'Texto do projeto',
-      caption: 'ignored',
+      caption: 'Legenda do projeto',
     });
     const project = await tx.query(`select title, caption from public.posts where id = $1`, [rows[0].id]);
     assert.equal(project.rows[0].title, 'Minha trajetória');
-    assert.equal(project.rows[0].caption, null);
+    assert.equal(project.rows[0].caption, 'Legenda do projeto');
   });
 
   const media = await db.query(
@@ -232,6 +232,116 @@ test('posts: everyone logged in reads, only the author edits or deletes', async 
   });
 });
 
+test('create_post: video cover must be an own upload', async () => {
+  const video = await uploadFile(users.ana, 'thumbv.mp4');
+  const thumb = await uploadFile(users.ana, 'thumbv.jpg');
+  const joaoThumb = await uploadFile(users.joao, 'jthumb.jpg');
+  const img = await uploadFile(users.ana, 'thumbimg.jpg');
+  await as(users.ana, async (tx) => {
+    const { rows } = await createPost(tx, 'video', [{ path: video, kind: 'video', duration_ms: 5000, thumbnail_path: thumb }]);
+    const m = await tx.query(`select thumbnail_path from public.post_media where post_id = $1`, [rows[0].id]);
+    assert.equal(m.rows[0].thumbnail_path, thumb);
+    await tx.query(`delete from public.posts where id = $1`, [rows[0].id]);
+  });
+  const video2 = await uploadFile(users.ana, 'thumbv2.mp4');
+  const vid = (thumbnail_path) => [{ path: video2, kind: 'video', duration_ms: 5000, thumbnail_path }];
+  await rejectsAs(users.ana, (tx) => createPost(tx, 'video', vid(joaoThumb)), 'other user thumb', /invalid_media_path/);
+  await rejectsAs(users.ana, (tx) => createPost(tx, 'video', vid(`${users.ana}/nope.jpg`)), 'thumb missing', /media_not_uploaded/);
+  await rejectsAs(users.ana, (tx) => createPost(tx, 'photo', [{ path: img, kind: 'image', thumbnail_path: thumb }]), 'thumb on image', /thumbnail_only_for_video/);
+});
+
+test('posts: title/body cannot be added to non-project posts', async () => {
+  const { rows } = await db.query(`select id from public.posts where author_id = $1 and type = 'photo'`, [users.ana]);
+  await rejectsAs(users.ana, (tx) => tx.query(`update public.posts set title = 'x' where id = $1`, [rows[0].id]), 'title on photo', /project_fields_only_on_projects/);
+});
+
+test('claps: toggle as yourself only, counted in get_posts', async () => {
+  const { rows } = await db.query(`select id from public.posts where author_id = $1 and type = 'photo'`, [users.ana]);
+  const postId = rows[0].id;
+  await as(users.joao, async (tx) => {
+    await tx.query(`insert into public.post_claps (post_id) values ($1)`, [postId]);
+    const p = await tx.query(`select claps_count, clapped_by_me from public.get_posts(p_post_id => $1)`, [postId]);
+    assert.equal(Number(p.rows[0].claps_count), 1);
+    assert.equal(p.rows[0].clapped_by_me, true);
+  });
+  await rejectsAs(users.joao, (tx) => tx.query(`insert into public.post_claps (post_id) values ($1)`, [postId]), 'double clap', /duplicate key/);
+  await rejectsAs(users.ana, (tx) => tx.query(`insert into public.post_claps (post_id, user_id) values ($1, $2)`, [postId, users.joao]), 'clap as someone else', /permission denied/);
+  await as(users.ana, async (tx) => {
+    const p = await tx.query(`select clapped_by_me from public.get_posts(p_post_id => $1)`, [postId]);
+    assert.equal(p.rows[0].clapped_by_me, false);
+    const del = await tx.query(`delete from public.post_claps where post_id = $1`, [postId]);
+    assert.equal(del.affectedRows, 0);
+  });
+  await as(users.joao, async (tx) => {
+    const del = await tx.query(`delete from public.post_claps where post_id = $1`, [postId]);
+    assert.equal(del.affectedRows, 1);
+    await tx.query(`insert into public.post_claps (post_id) values ($1)`, [postId]);
+  });
+});
+
+test('views: unique per person, author not counted, not readable directly', async () => {
+  const { rows } = await db.query(`select id from public.posts where author_id = $1 and type = 'photo'`, [users.ana]);
+  const postId = rows[0].id;
+  await as(users.joao, async (tx) => {
+    await tx.query(`select public.record_post_view($1)`, [postId]);
+    await tx.query(`select public.record_post_view($1)`, [postId]);
+  });
+  await as(users.ana, (tx) => tx.query(`select public.record_post_view($1)`, [postId]));
+  await as(users.ana, async (tx) => {
+    const p = await tx.query(`select views_count from public.get_posts(p_post_id => $1)`, [postId]);
+    assert.equal(Number(p.rows[0].views_count), 1);
+  });
+  await rejectsAs(users.joao, (tx) => tx.query(`select * from public.post_views`), 'read views', /permission denied/);
+  await rejectsAs(users.joao, (tx) => tx.query(`insert into public.post_views (post_id, user_id) values ($1, $2)`, [postId, users.joao]), 'insert view', /permission denied/);
+  await rejectsAs(null, (tx) => tx.query(`select * from public.get_posts()`), 'anon feed', /permission denied/);
+});
+
+test('comments and comment likes', async () => {
+  const { rows } = await db.query(`select id from public.posts where author_id = $1 and type = 'photo'`, [users.ana]);
+  const postId = rows[0].id;
+  const commentId = await as(users.joao, async (tx) => {
+    const c = await tx.query(`insert into public.comments (post_id, body) values ($1, 'Lindo!') returning id, author_id`, [postId]);
+    assert.equal(c.rows[0].author_id, users.joao);
+    return c.rows[0].id;
+  });
+  await rejectsAs(users.joao, (tx) => tx.query(`insert into public.comments (post_id, body) values ($1, '   ')`, [postId]), 'empty comment', /comments_body_check/);
+  await rejectsAs(users.ana, (tx) => tx.query(`insert into public.comments (post_id, author_id, body) values ($1, $2, 'x')`, [postId, users.joao]), 'comment as someone else', /permission denied/);
+  await as(users.ana, async (tx) => {
+    await tx.query(`insert into public.comment_likes (comment_id) values ($1)`, [commentId]);
+    const list = await tx.query(`select body, author_full_name, likes_count, liked_by_me from public.get_comments($1)`, [postId]);
+    assert.equal(list.rows.length, 1);
+    assert.equal(Number(list.rows[0].likes_count), 1);
+    assert.equal(list.rows[0].liked_by_me, true);
+    const del = await tx.query(`delete from public.comments where id = $1`, [commentId]);
+    assert.equal(del.affectedRows, 0);
+    const p = await tx.query(`select comments_count from public.get_posts(p_post_id => $1)`, [postId]);
+    assert.equal(Number(p.rows[0].comments_count), 1);
+  });
+  await as(users.joao, async (tx) => {
+    const del = await tx.query(`delete from public.comments where id = $1`, [commentId]);
+    assert.equal(del.affectedRows, 1);
+  });
+});
+
+test('get_posts: newest first, paged by cursor, filter by author', async () => {
+  await as(users.joao, async (tx) => {
+    const all = await tx.query(`select id, created_at, media from public.get_posts(p_limit => 50)`);
+    assert.ok(all.rows.length >= 4);
+    const page1 = await tx.query(`select id, created_at from public.get_posts(p_limit => 2)`);
+    const last = page1.rows[1];
+    const page2 = await tx.query(
+      `select id from public.get_posts(p_limit => 50, p_before_created_at => $1, p_before_id => $2)`,
+      [last.created_at, last.id],
+    );
+    assert.equal(page2.rows.length, all.rows.length - 2);
+    assert.ok(!page2.rows.some((r) => page1.rows.some((q) => q.id === r.id)));
+    const mine = await tx.query(`select id from public.get_posts(p_author_id => $1)`, [users.joao]);
+    assert.equal(mine.rows.length, 0);
+    const carousel = all.rows.find((r) => r.media.length === 2);
+    assert.deepEqual(carousel.media.map((m) => m.position), [0, 1]);
+  });
+});
+
 test('storage: users can only upload to their own folder', async () => {
   await as(users.ana, async (tx) => {
     await tx.query(`insert into storage.objects (bucket_id, name, owner_id) values ('avatars', $1, $2)`, [
@@ -266,7 +376,8 @@ test('profile stats', async () => {
   await as(users.joao, async (tx) => {
     const { rows } = await tx.query(`select * from public.get_profile_stats($1)`, [users.ana]);
     assert.equal(Number(rows[0].posts_count), 4);
-    assert.equal(Number(rows[0].claps_count), 0);
+    assert.equal(Number(rows[0].claps_count), 1);
+    assert.equal(Number(rows[0].audience_count), 1);
     assert.ok(rows[0].member_since instanceof Date);
   });
 });
@@ -278,6 +389,8 @@ test('deleting the auth user removes profile, interests and posts', async () => 
     ['profile_private', 'id'],
     ['profile_interests', 'profile_id'],
     ['posts', 'author_id'],
+    ['post_claps', 'user_id'],
+    ['comments', 'author_id'],
   ]) {
     const { rows } = await db.query(`select count(*)::int as n from public.${table} where ${column} = $1`, [users.ana]);
     assert.equal(rows[0].n, 0, table);

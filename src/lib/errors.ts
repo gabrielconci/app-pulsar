@@ -12,6 +12,7 @@ const messages: Record<string, string> = {
   invalid_email: 'Email inválido.',
   email_address_invalid: 'Email inválido.',
   already_confirmed: 'Esse email já foi confirmado. Volte e entre na sua conta.',
+  empty_file: 'Não foi possível ler esse arquivo. Escolha outro.',
   network_error: 'Sem conexão. Confira sua internet e tente de novo.',
 };
 

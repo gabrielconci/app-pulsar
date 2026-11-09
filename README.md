@@ -49,9 +49,13 @@ Antes de dar a tarefa por concluída: `npm run typecheck` e `npm run lint`.
 | `profiles` | Perfil público: usuário, nome, data de nascimento, sobre mim, gênero, foto. Criado automaticamente no cadastro. |
 | `profile_private` | CPF (validado e único). Só o dono lê. |
 | `interests` / `profile_interests` | 24 estilos de dança; máximo de 8 por usuário. `set_my_interests(ids)` substitui todos de uma vez. |
-| `posts` / `post_media` | Tipos: `video` (1 vídeo de até 30 s), `photo` (1 foto), `carousel` (2 a 10 fotos/vídeos), `project` (título, subtítulo, texto e 1 a 3 imagens, a primeira é a capa). Criados só via `create_post(...)`, que valida tudo. |
+| `posts` / `post_media` | Tipos: `video` (1 vídeo de até 30 s), `photo` (1 foto), `carousel` (2 a 10 fotos/vídeos), `project` (título, subtítulo, texto e 1 a 3 imagens, a primeira é a capa). Todos aceitam legenda (texto da folha "Descrição"). Vídeos levam uma capa (`thumbnail_path`). Criados só via `create_post(...)`, que valida tudo. |
+| `get_posts(...)` | Feed (mais novos primeiro, paginado por `created_at` + `id`), um post (`p_post_id`) ou os posts de um perfil (`p_author_id`), com autor, mídias e contagens. |
+| `post_claps` | Aclamações (como curtida): uma por pessoa por post. |
+| `post_views` / `record_post_view(id)` | Público: pessoas únicas que abriram o post (o autor não conta). Não é legível linha a linha. |
+| `comments` / `comment_likes` / `get_comments(id)` | Comentários e o coração de cada comentário. O autor pode apagar o próprio comentário. |
 | Storage | Buckets `avatars` (5 MB, imagens) e `post-media` (50 MB, imagens e vídeos). Cada usuário escreve só na pasta `<id do usuário>/`. Leitura pública. |
-| `get_profile_stats(id)` | Aba Estatísticas. Aclamações, público e conexões ficam em 0 até essas funções existirem. |
+| `get_profile_stats(id)` | Aba Estatísticas: publicações, aclamações recebidas e público. Conexões ficam em 0 até existirem. |
 | `is_username_available` / `is_cpf_available` | Validação nos formulários. |
 | Edge Function `login` | Recebe `{ identifier, password }` e devolve a sessão. Aceita email, usuário (com ou sem `@`) e CPF (com ou sem máscara). |
 | Edge Function `delete-account` | Apaga arquivos, registra o motivo (anônimo) e exclui a conta com tudo dela. |
@@ -88,5 +92,6 @@ Os testes rodam as migrações num Postgres embutido (PGlite), com uma simulaç�
 ### Limitações conhecidas
 
 - A duração do vídeo (≤ 30 s) é informada pelo app; o banco valida o número, mas não inspeciona o arquivo.
-- O limite de 50 MB por arquivo é o do plano gratuito do Supabase; o app deve comprimir os vídeos antes do envio.
+- O limite de 50 MB por arquivo é o do plano gratuito do Supabase. O app comprime as fotos (lado maior de 1440 px), mas ainda não comprime vídeos: vídeos acima de 50 MB são recusados com aviso.
+- O link compartilhado (`pulsar://post/<id>`) só abre para quem tem o app instalado e nem sempre fica clicável no WhatsApp. Um link web (domínio próprio) fica para depois.
 - Arquivos dos buckets são públicos para quem tiver o link (adequado para portfólio).

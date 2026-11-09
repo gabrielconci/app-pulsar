@@ -35,3 +35,11 @@ export function ageFromIso(iso: string, today = new Date()): number {
   if (today.getMonth() + 1 < m || (today.getMonth() + 1 === m && today.getDate() < d)) age--;
   return age;
 }
+
+const MONTHS = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+
+// Post date as in the Home card: "20 DE MAIO - 2023".
+export function formatPostDate(iso: string): string {
+  const date = new Date(iso);
+  return `${date.getDate()} DE ${MONTHS[date.getMonth()]} - ${date.getFullYear()}`;
+}
