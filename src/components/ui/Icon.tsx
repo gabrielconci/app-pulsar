@@ -25,7 +25,9 @@ export type IconName =
   | 'video'
   | 'carousel'
   | 'project'
-  | 'play';
+  | 'play'
+  | 'settings'
+  | 'logout';
 
 type Props = {
   name: IconName;
@@ -132,6 +134,18 @@ export function Icon({ name, size = 24, color = colors.text }: Props) {
         />
       )}
       {name === 'play' && <Path d="M7 4v16l13-8z" fill={color} />}
+      {name === 'settings' && (
+        <>
+          <Path
+            d="M10.3 4.3c.4-1.8 2.9-1.8 3.4 0a1.7 1.7 0 0 0 2.5 1.1c1.6-.9 3.3.8 2.4 2.4a1.7 1.7 0 0 0 1.1 2.5c1.8.4 1.8 2.9 0 3.4a1.7 1.7 0 0 0-1.1 2.5c.9 1.6-.8 3.3-2.4 2.4a1.7 1.7 0 0 0-2.5 1.1c-.4 1.8-2.9 1.8-3.4 0a1.7 1.7 0 0 0-2.5-1.1c-1.6.9-3.3-.8-2.4-2.4a1.7 1.7 0 0 0-1.1-2.5c-1.8-.4-1.8-2.9 0-3.4a1.7 1.7 0 0 0 1.1-2.5c-.9-1.6.8-3.3 2.4-2.4 1 .6 2.3.1 2.5-1.1z"
+            fill={color}
+          />
+          <Circle cx="12" cy="12" r="3" fill={colors.bg} />
+        </>
+      )}
+      {name === 'logout' && (
+        <Path d="M14 8V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-2M9 12h12l-3-3M18 15l3-3" {...stroke} />
+      )}
     </Svg>
   );
 }

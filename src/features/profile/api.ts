@@ -71,3 +71,65 @@ export function avatarUrl(path: string | null | undefined): string | null {
   if (!path) return null;
   return supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
 }
+
+// Public profile of anyone (no CPF).
+export type PublicProfile = Pick<
+  Tables<'profiles'>,
+  'id' | 'username' | 'full_name' | 'birth_date' | 'bio' | 'avatar_path' | 'contact_email' | 'created_at'
+>;
+
+export async function fetchProfile(id: string): Promise<PublicProfile | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, username, full_name, birth_date, bio, avatar_path, contact_email, created_at')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export type ProfileStats = {
+  memberSince: string;
+  posts: number;
+  audience: number;
+  claps: number;
+  connections: number;
+};
+
+export async function fetchProfileStats(id: string): Promise<ProfileStats | null> {
+  const { data, error } = await supabase.rpc('get_profile_stats', { p_profile_id: id });
+  if (error) throw error;
+  const row = data[0];
+  if (!row) return null;
+  return {
+    memberSince: row.member_since,
+    posts: Number(row.posts_count),
+    audience: Number(row.audience_count),
+    claps: Number(row.claps_count),
+    connections: Number(row.connections_count),
+  };
+}
+
+export type EditProfileInput = {
+  fullName: string;
+  username: string;
+  birthDate: string; // ISO yyyy-mm-dd
+  bio: string;
+  contactEmail: string;
+  avatarPath?: string;
+};
+
+export async function updateProfile(userId: string, input: EditProfileInput) {
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      full_name: input.fullName.trim(),
+      username: input.username.trim().toLowerCase(),
+      birth_date: input.birthDate,
+      bio: input.bio.trim() || null,
+      contact_email: input.contactEmail.trim() || null,
+      ...(input.avatarPath && { avatar_path: input.avatarPath }),
+    })
+    .eq('id', userId);
+  if (error) throw error;
+}

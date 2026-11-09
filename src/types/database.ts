@@ -245,6 +245,7 @@ export type Database = {
           caption: string | null
           created_at: string
           id: string
+          interest_id: number | null
           subtitle: string | null
           title: string | null
           type: Database["public"]["Enums"]["post_type"]
@@ -256,6 +257,7 @@ export type Database = {
           caption?: string | null
           created_at?: string
           id?: string
+          interest_id?: number | null
           subtitle?: string | null
           title?: string | null
           type: Database["public"]["Enums"]["post_type"]
@@ -267,6 +269,7 @@ export type Database = {
           caption?: string | null
           created_at?: string
           id?: string
+          interest_id?: number | null
           subtitle?: string | null
           title?: string | null
           type?: Database["public"]["Enums"]["post_type"]
@@ -278,6 +281,13 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_interest_id_fkey"
+            columns: ["interest_id"]
+            isOneToOne: false
+            referencedRelation: "interests"
             referencedColumns: ["id"]
           },
         ]
@@ -349,6 +359,7 @@ export type Database = {
           avatar_path: string | null
           bio: string | null
           birth_date: string | null
+          contact_email: string | null
           created_at: string
           full_name: string | null
           gender: string | null
@@ -361,6 +372,7 @@ export type Database = {
           avatar_path?: string | null
           bio?: string | null
           birth_date?: string | null
+          contact_email?: string | null
           created_at?: string
           full_name?: string | null
           gender?: string | null
@@ -373,6 +385,7 @@ export type Database = {
           avatar_path?: string | null
           bio?: string | null
           birth_date?: string | null
+          contact_email?: string | null
           created_at?: string
           full_name?: string | null
           gender?: string | null
@@ -392,6 +405,7 @@ export type Database = {
         Args: {
           p_body?: string
           p_caption?: string
+          p_interest_id?: number
           p_media: Json
           p_subtitle?: string
           p_title?: string
@@ -422,6 +436,7 @@ export type Database = {
           p_before_id?: string
           p_limit?: number
           p_post_id?: string
+          p_projects?: boolean
         }
         Returns: {
           author_avatar_path: string
@@ -435,6 +450,8 @@ export type Database = {
           comments_count: number
           created_at: string
           id: string
+          interest_id: number
+          interest_name: string
           media: Json
           subtitle: string
           title: string

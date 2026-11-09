@@ -8,10 +8,13 @@ import type { ProfileForm } from '../schemas';
 type Props = {
   control: Control<ProfileForm>;
   errors: FieldErrors<ProfileForm>;
+  // create = "Criar perfil" (with CPF); edit = "Editar perfil" (username
+  // and contact email instead of CPF, as in Figma).
+  mode: 'create' | 'edit';
 };
 
-// Fields shared by "Criar perfil" and (later) "Editar perfil".
-export function ProfileFormFields({ control, errors }: Props) {
+// Fields shared by "Criar perfil" and "Editar perfil".
+export function ProfileFormFields({ control, errors, mode }: Props) {
   return (
     <>
       <Controller
@@ -30,23 +33,48 @@ export function ProfileFormFields({ control, errors }: Props) {
           />
         )}
       />
-      <Controller
-        control={control}
-        name="cpf"
-        render={({ field }) => (
-          <TextField
-            label="CPF"
-            placeholder="000.000.000-00"
-            keyboardType="number-pad"
-            maxLength={14}
-            value={field.value}
-            onChangeText={(text) => field.onChange(formatCpf(text))}
-            onBlur={field.onBlur}
-            error={errors.cpf?.message}
-            hint="Só você vê seu CPF. Ele também serve para entrar no app."
+      {mode === 'create' ? (
+        <>
+          <Controller
+            control={control}
+            name="cpf"
+            render={({ field }) => (
+              <TextField
+                label="CPF"
+                placeholder="000.000.000-00"
+                keyboardType="number-pad"
+                maxLength={14}
+                value={field.value}
+                onChangeText={(text) => field.onChange(formatCpf(text))}
+                onBlur={field.onBlur}
+                error={errors.cpf?.message}
+                hint="Só você vê seu CPF. Ele também serve para entrar no app."
+              />
+            )}
           />
-        )}
-      />
+        </>
+      ) : (
+        <>
+          <Controller
+            control={control}
+            name="username"
+            render={({ field }) => (
+              <TextField
+                label="Nome de usuário"
+                placeholder="Inserir apelido"
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="username"
+                maxLength={30}
+                value={field.value}
+                onChangeText={field.onChange}
+                onBlur={field.onBlur}
+                error={errors.username?.message}
+              />
+            )}
+          />
+        </>
+      )}
       <Controller
         control={control}
         name="birthDate"
@@ -80,6 +108,26 @@ export function ProfileFormFields({ control, errors }: Props) {
           />
         )}
       />
+      {mode === 'edit' ? (
+        <Controller
+          control={control}
+          name="contactEmail"
+          render={({ field }) => (
+            <TextField
+              label="Email para contato (opcional)"
+              placeholder="Inserir email"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+              value={field.value}
+              onChangeText={field.onChange}
+              onBlur={field.onBlur}
+              error={errors.contactEmail?.message}
+              hint="Aparece no seu perfil para quem quiser te contratar."
+            />
+          )}
+        />
+      ) : null}
     </>
   );
 }

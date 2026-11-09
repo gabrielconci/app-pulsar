@@ -2,13 +2,14 @@ import { Controller, type Control, type FieldErrors } from 'react-hook-form';
 import { View, StyleSheet } from 'react-native';
 import { TextField } from '@/components/ui';
 import { spacing } from '@/theme';
+import { StylePicker } from './StylePicker';
 
-export type PostTextForm = { title: string; subtitle: string; body: string; caption: string };
+export type PostTextForm = { title: string; subtitle: string; body: string; caption: string; interestId: number | null };
 
 type Props = {
   control: Control<PostTextForm>;
   errors: FieldErrors<PostTextForm>;
-  // Projects have title, subtitle and text; other posts only the caption.
+  // Projects also have subtitle and text.
   isProject: boolean;
 };
 
@@ -16,24 +17,24 @@ type Props = {
 export function PostTextFields({ control, errors, isProject }: Props) {
   return (
     <View style={styles.fields}>
+      <Controller
+        control={control}
+        name="title"
+        render={({ field }) => (
+          <TextField
+            boxed
+            label={isProject ? 'Título' : 'Título (opcional)'}
+            placeholder="Adicionar..."
+            maxLength={100}
+            value={field.value}
+            onChangeText={field.onChange}
+            onBlur={field.onBlur}
+            error={errors.title?.message}
+          />
+        )}
+      />
       {isProject ? (
         <>
-          <Controller
-            control={control}
-            name="title"
-            render={({ field }) => (
-              <TextField
-                boxed
-                label="Título"
-                placeholder="Adicionar..."
-                maxLength={100}
-                value={field.value}
-                onChangeText={field.onChange}
-                onBlur={field.onBlur}
-                error={errors.title?.message}
-              />
-            )}
-          />
           <Controller
             control={control}
             name="subtitle"
@@ -70,6 +71,11 @@ export function PostTextFields({ control, errors, isProject }: Props) {
           />
         </>
       ) : null}
+      <Controller
+        control={control}
+        name="interestId"
+        render={({ field }) => <StylePicker value={field.value} onChange={field.onChange} />}
+      />
       <Controller
         control={control}
         name="caption"

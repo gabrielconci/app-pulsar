@@ -46,7 +46,7 @@ export default function NewProjectScreen() {
     formState: { errors, isSubmitting, isDirty },
   } = useForm<PostTextForm>({
     resolver: zodResolver(postTextSchema(true)),
-    defaultValues: { title: '', subtitle: '', body: '', caption: '' },
+    defaultValues: { title: '', subtitle: '', body: '', caption: '', interestId: null },
   });
 
   const hasContent = isDirty || slots.some(Boolean);
@@ -89,7 +89,7 @@ export default function NewProjectScreen() {
       await createPost(session!.user.id, { type: 'project', media, ...values }, (done, total) =>
         setProgress({ done, total }),
       );
-      await queryClient.invalidateQueries({ queryKey: postKeys.feed });
+      await queryClient.invalidateQueries({ queryKey: postKeys.all });
       setExit(() => () => router.back());
     } catch (error) {
       setFormError(errorMessage(error));

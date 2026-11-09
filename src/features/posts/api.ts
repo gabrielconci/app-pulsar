@@ -22,6 +22,19 @@ export async function fetchFeed(cursor: FeedCursor): Promise<Post[]> {
   return data.map(toPost);
 }
 
+// Posts of one person for the profile tabs: projects, or everything else.
+export async function fetchAuthorPosts(authorId: string, projects: boolean, cursor: FeedCursor): Promise<Post[]> {
+  const { data, error } = await supabase.rpc('get_posts', {
+    p_author_id: authorId,
+    p_projects: projects,
+    p_limit: FEED_PAGE_SIZE,
+    p_before_created_at: cursor?.createdAt,
+    p_before_id: cursor?.id,
+  });
+  if (error) throw error;
+  return data.map(toPost);
+}
+
 export async function fetchPost(id: string): Promise<Post | null> {
   const { data, error } = await supabase.rpc('get_posts', { p_post_id: id, p_limit: 1 });
   if (error) throw error;
@@ -60,6 +73,8 @@ export type CreatePostInput = {
   subtitle?: string;
   body?: string;
   caption?: string;
+  // Dance style (interest id).
+  interestId?: number | null;
 };
 
 // Uploads every file to "post-media/<user id>/..." and then creates the post.
@@ -106,6 +121,7 @@ export async function createPost(
       p_subtitle: input.subtitle,
       p_body: input.body,
       p_caption: input.caption,
+      p_interest_id: input.interestId ?? undefined,
     });
     if (error) throw error;
     return data;
@@ -115,7 +131,13 @@ export async function createPost(
   }
 }
 
-export type UpdatePostInput = { caption: string; title?: string; subtitle?: string; body?: string };
+export type UpdatePostInput = {
+  caption: string;
+  title: string;
+  subtitle?: string;
+  body?: string;
+  interestId: number | null;
+};
 
 export async function updatePost(post: Post, input: UpdatePostInput) {
   const isProject = post.type === 'project';
@@ -123,8 +145,9 @@ export async function updatePost(post: Post, input: UpdatePostInput) {
     .from('posts')
     .update({
       caption: input.caption.trim() || null,
+      title: input.title.trim() || null,
+      interest_id: input.interestId,
       ...(isProject && {
-        title: input.title?.trim(),
         subtitle: input.subtitle?.trim() || null,
         body: input.body?.trim(),
       }),

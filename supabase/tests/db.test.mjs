@@ -60,8 +60,16 @@ async function uploadFile(uid, name, bucket = 'post-media') {
 
 function createPost(tx, type, media, extra = {}) {
   return tx.query(
-    `select public.create_post($1::public.post_type, $2::jsonb, $3, $4, $5, $6) as id`,
-    [type, JSON.stringify(media), extra.title ?? null, extra.subtitle ?? null, extra.body ?? null, extra.caption ?? null],
+    `select public.create_post($1::public.post_type, $2::jsonb, $3, $4, $5, $6, $7::smallint) as id`,
+    [
+      type,
+      JSON.stringify(media),
+      extra.title ?? null,
+      extra.subtitle ?? null,
+      extra.body ?? null,
+      extra.caption ?? null,
+      extra.interestId ?? null,
+    ],
   );
 }
 
@@ -250,9 +258,51 @@ test('create_post: video cover must be an own upload', async () => {
   await rejectsAs(users.ana, (tx) => createPost(tx, 'photo', [{ path: img, kind: 'image', thumbnail_path: thumb }]), 'thumb on image', /thumbnail_only_for_video/);
 });
 
-test('posts: title/body cannot be added to non-project posts', async () => {
+test('posts: subtitle/body only on projects; title and style on any post', async () => {
   const { rows } = await db.query(`select id from public.posts where author_id = $1 and type = 'photo'`, [users.ana]);
-  await rejectsAs(users.ana, (tx) => tx.query(`update public.posts set title = 'x' where id = $1`, [rows[0].id]), 'title on photo', /project_fields_only_on_projects/);
+  await rejectsAs(users.ana, (tx) => tx.query(`update public.posts set body = 'x' where id = $1`, [rows[0].id]), 'body on photo', /project_text_only_on_projects/);
+  await as(users.ana, async (tx) => {
+    const upd = await tx.query(`update public.posts set title = 'Ensaio', interest_id = 2 where id = $1`, [rows[0].id]);
+    assert.equal(upd.affectedRows, 1);
+    await tx.query(`update public.posts set title = null, interest_id = null where id = $1`, [rows[0].id]);
+  });
+  await rejectsAs(users.ana, (tx) => tx.query(`update public.posts set author_id = $2 where id = $1`, [rows[0].id, users.joao]), 'change author', /permission denied/);
+
+  const img = await uploadFile(users.ana, 'styled.jpg');
+  await as(users.ana, async (tx) => {
+    const { rows: created } = await createPost(tx, 'photo', [{ path: img, kind: 'image' }], { title: 'Prêmio', interestId: 1 });
+    const p = await tx.query(`select title, interest_name from public.get_posts(p_post_id => $1)`, [created[0].id]);
+    assert.equal(p.rows[0].title, 'Prêmio');
+    assert.ok(p.rows[0].interest_name);
+    await tx.query(`delete from public.posts where id = $1`, [created[0].id]);
+  });
+  const img2 = await uploadFile(users.ana, 'styled2.jpg');
+  await rejectsAs(users.ana, (tx) => createPost(tx, 'photo', [{ path: img2, kind: 'image' }], { interestId: 999 }), 'unknown style', /foreign key/);
+});
+
+test('get_posts: p_projects filters the profile tabs', async () => {
+  await as(users.joao, async (tx) => {
+    const projects = await tx.query(`select type from public.get_posts(p_author_id => $1, p_projects => true)`, [users.ana]);
+    assert.ok(projects.rows.length >= 1);
+    assert.ok(projects.rows.every((r) => r.type === 'project'));
+    const media = await tx.query(`select type from public.get_posts(p_author_id => $1, p_projects => false)`, [users.ana]);
+    assert.ok(media.rows.length >= 3);
+    assert.ok(media.rows.every((r) => r.type !== 'project'));
+  });
+});
+
+test('profiles: optional contact email, valid and editable only by the owner', async () => {
+  await as(users.ana, async (tx) => {
+    const own = await tx.query(`update public.profiles set contact_email = 'contato@ana.com' where id = $1`, [users.ana]);
+    assert.equal(own.affectedRows, 1);
+    const other = await tx.query(`update public.profiles set contact_email = 'x@y.com' where id = $1`, [users.joao]);
+    assert.equal(other.affectedRows, 0);
+  });
+  await rejectsAs(users.ana, (tx) => tx.query(`update public.profiles set contact_email = 'nao-e-email' where id = $1`, [users.ana]), 'invalid email', /contact_email_check/);
+  await as(users.joao, async (tx) => {
+    const { rows } = await tx.query(`select contact_email from public.profiles where id = $1`, [users.ana]);
+    assert.equal(rows[0].contact_email, 'contato@ana.com');
+  });
 });
 
 test('claps: toggle as yourself only, counted in get_posts', async () => {

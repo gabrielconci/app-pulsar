@@ -18,6 +18,7 @@ import { PostMediaView, toSources } from '@/features/posts/components/PostMediaV
 import { ShareSheet } from '@/features/posts/components/ShareSheet';
 import { postKeys, removePostFromCache, usePost, useToggleClap } from '@/features/posts/hooks';
 import type { Post } from '@/features/posts/types';
+import { useOpenProfile } from '@/features/profile/useOpenProfile';
 import { errorMessage } from '@/lib/errors';
 import { colors, spacing } from '@/theme';
 
@@ -32,6 +33,7 @@ export default function PostScreen() {
   const { session } = useAuth();
   const { data: post, isPending, error } = usePost(id);
   const toggleClap = useToggleClap(post);
+  const openProfile = useOpenProfile();
   const [sheet, setSheet] = useState<Sheet>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -88,7 +90,7 @@ export default function PostScreen() {
     try {
       await deletePost(post);
       removePostFromCache(queryClient, post.id);
-      queryClient.invalidateQueries({ queryKey: postKeys.feed });
+      queryClient.invalidateQueries({ queryKey: postKeys.all });
       setConfirmDelete(false);
       router.back();
     } catch (e) {
@@ -109,7 +111,7 @@ export default function PostScreen() {
         <BackButton tone="light" />
       </View>
 
-      <PostAuthorBar post={post} tone={isProject ? 'light' : 'dark'} />
+      <PostAuthorBar post={post} tone={isProject ? 'light' : 'dark'} onPress={() => openProfile(post.author_id)} />
       <View style={[styles.menu, { bottom: insets.bottom + AUTHOR_BAR_HEIGHT - 26 }]} pointerEvents="box-none">
         <PostActionsMenu clapped={post.clapped_by_me} isOwner={isOwner} onAction={onAction} />
       </View>

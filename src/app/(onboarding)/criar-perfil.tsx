@@ -41,6 +41,8 @@ export default function CreateProfileScreen() {
       cpf: profile?.cpf ? formatCpf(profile.cpf) : '',
       birthDate: isoToBrDate(profile?.birth_date),
       bio: profile?.bio ?? '',
+      username: '',
+      contactEmail: '',
     },
   });
 
@@ -75,7 +77,7 @@ export default function CreateProfileScreen() {
       <KeyboardScroll contentStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}>
         <AppText variant="title">Criar perfil</AppText>
         <ProfilePhotoPicker uri={photo?.uri ?? avatarUrl(profile?.avatar_path)} onPick={setPhoto} />
-        <ProfileFormFields control={control} errors={errors} />
+        <ProfileFormFields control={control} errors={errors} mode="create" />
         {formError ? (
           <AppText variant="caption" color="danger" accessibilityLiveRegion="polite">
             {formError}

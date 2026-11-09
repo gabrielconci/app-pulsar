@@ -36,20 +36,20 @@ export default function PublishScreen() {
     formState: { errors, isSubmitting },
   } = useForm<PostTextForm>({
     resolver: zodResolver(postTextSchema(false)),
-    defaultValues: { title: '', subtitle: '', body: '', caption: '' },
+    defaultValues: { title: '', subtitle: '', body: '', caption: '', interestId: null },
   });
 
   const previewWidth = width - spacing.form * 2;
 
-  const onSubmit = handleSubmit(async ({ caption }) => {
+  const onSubmit = handleSubmit(async ({ caption, title, interestId }) => {
     if (!draft) return;
     setFormError(null);
     try {
-      await createPost(session!.user.id, { type: draft.type, media: draft.media, caption }, (done, total) =>
+      await createPost(session!.user.id, { type: draft.type, media: draft.media, caption, title, interestId }, (done, total) =>
         setProgress({ done, total }),
       );
       postDraft.clear();
-      await queryClient.invalidateQueries({ queryKey: postKeys.feed });
+      await queryClient.invalidateQueries({ queryKey: postKeys.all });
       router.back();
     } catch (error) {
       setFormError(errorMessage(error));

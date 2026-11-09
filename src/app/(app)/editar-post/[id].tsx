@@ -53,6 +53,7 @@ function EditForm({ post }: { post: Post }) {
       subtitle: post.subtitle ?? '',
       body: post.body ?? '',
       caption: post.caption ?? '',
+      interestId: post.interest_id,
     },
   });
 
@@ -62,7 +63,7 @@ function EditForm({ post }: { post: Post }) {
       await updatePost(post, values);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: postKeys.detail(post.id) }),
-        queryClient.invalidateQueries({ queryKey: postKeys.feed }),
+        queryClient.invalidateQueries({ queryKey: postKeys.all }),
       ]);
       router.back();
     } catch (error) {

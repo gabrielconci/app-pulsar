@@ -7,13 +7,15 @@ const projectSchema = z.object({
   subtitle: z.string().trim().max(200, 'O subtítulo pode ter até 200 caracteres.'),
   body: z.string().trim().min(1, 'Escreva o texto do projeto.').max(10000, 'O texto pode ter até 10000 caracteres.'),
   caption: captionSchema,
+  interestId: z.number().nullable(),
 });
 
 const mediaPostSchema = z.object({
-  title: z.string(),
+  title: z.string().trim().max(100, 'O título pode ter até 100 caracteres.'),
   subtitle: z.string(),
   body: z.string(),
   caption: captionSchema,
+  interestId: z.number().nullable(),
 });
 
 // Text of a post: projects need title and text; other posts only a caption.

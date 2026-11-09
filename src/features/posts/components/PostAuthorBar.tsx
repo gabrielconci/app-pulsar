@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText, Avatar } from '@/components/ui';
 import { avatarUrl } from '@/features/profile/api';
@@ -11,10 +11,11 @@ type Props = {
   post: Post;
   // Dark over photos and videos; light under a project's text.
   tone: 'dark' | 'light';
+  onPress: () => void;
 };
 
 // Bottom bar of the open post with the author's photo and name.
-export function PostAuthorBar({ post, tone }: Props) {
+export function PostAuthorBar({ post, tone, onPress }: Props) {
   const insets = useSafeAreaInsets();
   const name = post.author_full_name ?? post.author_username;
   const dark = tone === 'dark';
@@ -27,10 +28,12 @@ export function PostAuthorBar({ post, tone }: Props) {
         { height: AUTHOR_BAR_HEIGHT + insets.bottom, paddingBottom: insets.bottom },
       ]}
     >
-      <Avatar uri={avatarUrl(post.author_avatar_path)} name={name} size={32} />
-      <AppText variant="bodyStrong" color={dark ? 'white' : 'text'} numberOfLines={1} style={styles.name}>
-        {name}
-      </AppText>
+      <Pressable onPress={onPress} accessibilityRole="link" accessibilityLabel={`Ver perfil de ${name}`} style={styles.author}>
+        <Avatar uri={avatarUrl(post.author_avatar_path)} name={name} size={32} />
+        <AppText variant="bodyStrong" color={dark ? 'white' : 'text'} numberOfLines={1} style={styles.name}>
+          {name}
+        </AppText>
+      </Pressable>
     </View>
   );
 }
@@ -52,5 +55,6 @@ const styles = StyleSheet.create({
   },
   dark: { backgroundColor: 'rgba(20, 19, 18, 0.94)' },
   light: { backgroundColor: colors.bg, borderTopWidth: 1, borderColor: colors.surface2 },
+  author: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 48, flexShrink: 1 },
   name: { flexShrink: 1 },
 });

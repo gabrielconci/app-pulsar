@@ -11,14 +11,15 @@ import type { Post } from '../types';
 type Props = {
   post: Post;
   onPress: (post: Post) => void;
+  onAuthorPress: (authorId: string) => void;
 };
 
 // Height / width of the card photo in the Figma Home frame (392 x 510).
 const MEDIA_RATIO = 510 / 392;
 
-// Home card: photo with the title pill (projects only), then a strip with
-// the author and the date.
-export const PostCard = memo(function PostCard({ post, onPress }: Props) {
+// Home card: photo with the title pill (title + style, when there is a
+// title), then a strip with the author and the date.
+export const PostCard = memo(function PostCard({ post, onPress, onAuthorPress }: Props) {
   const first = post.media[0];
   const cover = first ? (first.kind === 'video' ? first.thumbnail_path : first.path) : null;
   const name = post.author_full_name ?? post.author_username;
@@ -35,11 +36,16 @@ export const PostCard = memo(function PostCard({ post, onPress }: Props) {
           <Image source={mediaUrl(cover)} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} recyclingKey={post.id} />
         ) : null}
 
-        {post.type === 'project' && post.title ? (
+        {post.title ? (
           <View style={styles.pill}>
             <AppText variant="bodyStrong" color="white" numberOfLines={1} style={styles.pillTitle}>
               {post.title}
             </AppText>
+            {post.interest_name ? (
+              <AppText variant="captionStrong" color="white" numberOfLines={1} style={styles.pillStyle}>
+                {post.interest_name}
+              </AppText>
+            ) : null}
           </View>
         ) : null}
 
@@ -56,7 +62,12 @@ export const PostCard = memo(function PostCard({ post, onPress }: Props) {
         ) : null}
       </View>
 
-      <View style={styles.footer}>
+      <Pressable
+        onPress={() => onAuthorPress(post.author_id)}
+        accessibilityRole="link"
+        accessibilityLabel={`Ver perfil de ${name}`}
+        style={styles.footer}
+      >
         <Avatar uri={avatarUrl(post.author_avatar_path)} name={name} size={44} />
         <AppText variant="bodyStrong" numberOfLines={1} style={styles.name}>
           {name}
@@ -64,7 +75,7 @@ export const PostCard = memo(function PostCard({ post, onPress }: Props) {
         <AppText variant="caption" color="text2">
           {formatPostDate(post.created_at)}
         </AppText>
-      </View>
+      </Pressable>
     </Pressable>
   );
 });
@@ -84,14 +95,17 @@ const styles = StyleSheet.create({
     left: spacing.lg,
     right: spacing.lg,
     minHeight: 40,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.primary,
     backgroundColor: colors.scrim,
   },
-  pillTitle: { textDecorationLine: 'underline' },
+  pillTitle: { flex: 1, textDecorationLine: 'underline' },
+  pillStyle: { fontSize: 13, maxWidth: '45%' },
   badge: {
     position: 'absolute',
     right: spacing.md,

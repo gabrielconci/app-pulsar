@@ -1,53 +1,26 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { AppHeader } from '@/components/layout';
 import { AppText, Button, Icon } from '@/components/ui';
-import { postDraft } from '@/features/posts/draft';
-import { MediaError, pickMedia, prepareMedia } from '@/features/posts/media';
-import { NewPostSheet } from '@/features/posts/components/NewPostSheet';
 import { PostCard } from '@/features/posts/components/PostCard';
 import { useFeed } from '@/features/posts/hooks';
-import type { Post, PostType } from '@/features/posts/types';
+import type { Post } from '@/features/posts/types';
+import { useNewPost } from '@/features/posts/useNewPost';
+import { useOpenProfile } from '@/features/profile/useOpenProfile';
 import { errorMessage } from '@/lib/errors';
 import { colors, radius, spacing, touchTarget } from '@/theme';
 
 export default function HomeScreen() {
   const feed = useFeed();
   const posts = feed.data?.pages.flat() ?? [];
-  const [choosing, setChoosing] = useState(false);
-  const [preparing, setPreparing] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const newPost = useNewPost();
+  const openProfile = useOpenProfile();
 
   const openPost = useCallback((post: Post) => {
     router.push({ pathname: '/post/[id]', params: { id: post.id } });
   }, []);
-
-  const startPost = async (type: PostType) => {
-    setChoosing(false);
-    setNotice(null);
-    if (type === 'project') {
-      router.push('/criar/projeto');
-      return;
-    }
-    try {
-      const assets = await pickMedia(type);
-      if (!assets) return;
-      if (type === 'carousel' && assets.length < 2) {
-        setNotice('Escolha pelo menos 2 fotos ou vídeos para o carrossel.');
-        return;
-      }
-      setPreparing(true);
-      const media = await prepareMedia(assets);
-      postDraft.set({ type, media });
-      router.push('/criar/publicar');
-    } catch (e) {
-      setNotice(e instanceof MediaError ? e.message : errorMessage(e));
-    } finally {
-      setPreparing(false);
-    }
-  };
 
   return (
     <View style={styles.screen}>
@@ -57,7 +30,7 @@ export default function HomeScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Nova publicação"
-            onPress={() => setChoosing(true)}
+            onPress={newPost.open}
             hitSlop={8}
             style={({ pressed }) => [styles.plus, pressed && { backgroundColor: colors.primaryPressed }]}
           >
@@ -66,10 +39,10 @@ export default function HomeScreen() {
         }
       />
 
-      {notice ? (
-        <Pressable onPress={() => setNotice(null)} style={styles.notice} accessibilityLiveRegion="polite">
+      {newPost.notice ? (
+        <Pressable onPress={newPost.clearNotice} style={styles.notice} accessibilityLiveRegion="polite">
           <AppText variant="caption" color="danger" align="center">
-            {notice}
+            {newPost.notice}
           </AppText>
         </Pressable>
       ) : null}
@@ -77,7 +50,7 @@ export default function HomeScreen() {
       <FlatList
         data={posts}
         keyExtractor={(p) => p.id}
-        renderItem={({ item }) => <PostCard post={item} onPress={openPost} />}
+        renderItem={({ item }) => <PostCard post={item} onPress={openPost} onAuthorPress={openProfile} />}
         contentContainerStyle={styles.list}
         ItemSeparatorComponent={Separator}
         onEndReached={() => feed.hasNextPage && !feed.isFetchingNextPage && feed.fetchNextPage()}
@@ -105,7 +78,7 @@ export default function HomeScreen() {
               {feed.isError ? (
                 <Button title="Tentar de novo" onPress={() => feed.refetch()} />
               ) : (
-                <Button title="Criar publicação" onPress={() => setChoosing(true)} />
+                <Button title="Criar publicação" onPress={newPost.open} />
               )}
             </View>
           )
@@ -115,16 +88,7 @@ export default function HomeScreen() {
         }
       />
 
-      <NewPostSheet visible={choosing} onClose={() => setChoosing(false)} onSelect={startPost} />
-
-      {preparing ? (
-        <View style={styles.overlay} accessibilityLiveRegion="polite">
-          <View style={styles.overlayCard}>
-            <ActivityIndicator color={colors.primary} />
-            <AppText variant="body">Preparando mídia…</AppText>
-          </View>
-        </View>
-      ) : null}
+      {newPost.ui}
     </View>
   );
 }
@@ -148,25 +112,4 @@ const styles = StyleSheet.create({
   loading: { marginTop: spacing.xxl },
   more: { paddingVertical: spacing.lg },
   empty: { flex: 1, justifyContent: 'center', gap: spacing.md, paddingHorizontal: spacing.form, paddingBottom: spacing.xxl },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  overlayCard: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    alignItems: 'center',
-    backgroundColor: colors.bg,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.surface2,
-  },
 });

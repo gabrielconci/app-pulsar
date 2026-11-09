@@ -46,11 +46,11 @@ Antes de dar a tarefa por concluída: `npm run typecheck` e `npm run lint`.
 
 | Parte | Descrição |
 |---|---|
-| `profiles` | Perfil público: usuário, nome, data de nascimento, sobre mim, gênero, foto. Criado automaticamente no cadastro. |
+| `profiles` | Perfil público: usuário, nome, data de nascimento, sobre mim, gênero, foto e email para contato (opcional). Criado automaticamente no cadastro. |
 | `profile_private` | CPF (validado e único). Só o dono lê. |
 | `interests` / `profile_interests` | 24 estilos de dança; máximo de 8 por usuário. `set_my_interests(ids)` substitui todos de uma vez. |
-| `posts` / `post_media` | Tipos: `video` (1 vídeo de até 30 s), `photo` (1 foto), `carousel` (2 a 10 fotos/vídeos), `project` (título, subtítulo, texto e 1 a 3 imagens, a primeira é a capa). Todos aceitam legenda (texto da folha "Descrição"). Vídeos levam uma capa (`thumbnail_path`). Criados só via `create_post(...)`, que valida tudo. |
-| `get_posts(...)` | Feed (mais novos primeiro, paginado por `created_at` + `id`), um post (`p_post_id`) ou os posts de um perfil (`p_author_id`), com autor, mídias e contagens. |
+| `posts` / `post_media` | Tipos: `video` (1 vídeo de até 30 s), `photo` (1 foto), `carousel` (2 a 10 fotos/vídeos), `project` (título, subtítulo, texto e 1 a 3 imagens, a primeira é a capa). Todos aceitam título, estilo de dança (`interest_id`) e legenda (texto da folha "Descrição"). Vídeos levam uma capa (`thumbnail_path`). Criados só via `create_post(...)`, que valida tudo. |
+| `get_posts(...)` | Feed (mais novos primeiro, paginado por `created_at` + `id`), um post (`p_post_id`) ou os posts de um perfil (`p_author_id`, com `p_projects` para as abas Vídeos/Projetos), com autor, estilo, mídias e contagens. |
 | `post_claps` | Aclamações (como curtida): uma por pessoa por post. |
 | `post_views` / `record_post_view(id)` | Público: pessoas únicas que abriram o post (o autor não conta). Não é legível linha a linha. |
 | `comments` / `comment_likes` / `get_comments(id)` | Comentários e o coração de cada comentário. O autor pode apagar o próprio comentário. |
